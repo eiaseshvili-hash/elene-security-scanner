@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="en">
+<%- include('../partials/head', { title, description }) %>
+<body class="<%= pdfMode ? 'pdf-mode' : '' %>">
+  <%- include('../partials/header') %>
+
+  <main class="report-page">
+    <section class="report-hero">
+      <div class="container">
+        <div class="report-top">
+          <div class="report-title-block">
+            <p class="eyebrow">Security report</p>
+            <h1><%= report.domain %></h1>
+            <p class="report-date">Scanned at <%= new Date(report.scannedAt).toLocaleString('en-US') %></p>
+          </div>
+
+<% if (!pdfMode) { %>
+  <button
+    type="button"
+    class="report-export-button"
+    id="exportPdfButton"
+    data-url="/scan/export.pdf?domain=<%= encodeURIComponent(report.originalInput || report.domain) %>"
+    data-filename="<%= report.domain %>-security-report.pdf"
+  >
+<span class="export-progress-ring" aria-hidden="true"></span>
+
+    <span class="export-button-label">Export Full Report</span>
+  </button>
+<% } else { %>
+  <div class="report-export-button report-export-static">
+    <span class="report-export-icon">
+      <i class="ph ph-shield-check"></i>
+    </span>
+
+    <span class="report-export-text">
+      <strong>Full Security Report</strong>
+      <small><%= report.scoreReport.score %>/100 · <%= report.scoreReport.grade %></small>
+    </span>
+  </div>
+<% } %>
+        </div>
+      </div>
+    </section>
+
+    <%
+      const domainInfo = report.domainInfoReport || {};
+      const formatDate = (value) => {
+        if (!value) return 'Unknown';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-US');
+      };
+    %>
+
+    <section class="report-section">
+      <div class="container">
+        <% if (report.emailTrustReport) { %>
+          <section class="report-card email-top-summary email-top-summary-<%= report.emailTrustReport.level %>">
+            <div>
+              <span>Email Trust Summary</span>
+              <h2><%= report.emailTrustReport.verdict %></h2>
+              <p><%= report.emailTrustReport.summary %></p>
+            </div>
+
+<div class="email-top-summary-side">
+  <div class="email-top-verdict-wrap">
+    <div class="email-top-verdict email-top-verdict-<%= report.emailTrustReport.level %>">
+      <% if (report.emailTrustReport.level === 'high') { %>
+        <span>✓</span>
+        <strong>Valid</strong>
+      <% } else if (report.emailTrustReport.level === 'medium') { %>
+        <span>!</span>
+        <strong>Partially verified</strong>
+      <% } else { %>
+        <span>!</span>
+        <strong>Caution</strong>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="email-top-action-wrap">
+    <a href="#mail-security">View mail details</a>
+  </div>
+</div>
+          </section>
+        <% } %>
+
+        <section class="report-card compact-issues-card">
+          <div class="compact-issues-head">
+            <div>
+              <h2>Detected issues</h2>
+              <p>Important configuration warnings found during this scan.</p>
+            </div>
+            <span><%= report.scoreReport.issues.length %> issue<%= report.scoreReport.issues.length === 1 ? '' : 's' %></span>
+          </div>
+
+          <% if (report.scoreReport.issues.length) { %>
+            <div class="compact-issues-list">
+              <% report.scoreReport.issues.forEach((issue) => { %>
+                <div class="compact-issue-item <%= issue.severity %>">
+                  <div class="compact-issue-icon">
+                    <i class="ph ph-warning-circle"></i>
+                  </div>
+
+                  <div class="compact-issue-content">
+                    <div>
+                      <strong><%= issue.area %></strong>
+                      <span><%= issue.severity %></span>
+                    </div>
+                    <p><%= issue.message %></p>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="compact-issues-list">
+              <div class="compact-issue-item clean">
+                <div class="compact-issue-icon">
+                  <i class="ph ph-check-circle"></i>
+                </div>
+                <div class="compact-issue-content">
+                  <div>
+                    <strong>No major issues</strong>
+                    <span>clean</span>
+                  </div>
+                  <p>No important configuration issues were detected.</p>
+                </div>
+              </div>
+            </div>
+          <% } %>
+        </section>
+
+        <section class="report-card domain-info-card domain-info-card-compact">
+          <div class="card-heading">
+            <div class="icon-box"><i class="ph ph-identification-card"></i></div>
+            <div>
+              <h2>Domain information</h2>
+              <p>Registration details, nameservers, domain status and public WHOIS/RDAP data.</p>
+            </div>
+          </div>
+
+          <div class="domain-info-lines">
+            <div class="domain-info-line">
+              <strong>Registrator</strong>
+              <span><%= domainInfo.registrar || 'Unknown' %></span>
+            </div>
+
+            <div class="domain-info-line">
+              <strong>Created date</strong>
+              <span><%= formatDate(domainInfo.createdAt) %></span>
+            </div>
+
+            <div class="domain-info-line">
+              <strong>Expiry date</strong>
+              <span><%= formatDate(domainInfo.expiresAt) %></span>
+            </div>
+
+            <div class="domain-info-line">
+              <strong>Updated date</strong>
+              <span><%= formatDate(domainInfo.updatedAt) %></span>
+            </div>
+
+            <div class="domain-info-line">
+              <strong>WHOIS server</strong>
+              <span><%= domainInfo.whoisServer || 'Unknown' %></span>
+            </div>
+
+            <div class="domain-info-line">
+              <strong>Data source</strong>
+              <span><%= domainInfo.source || 'Unavailable' %></span>
+            </div>
+
+            <div class="domain-info-line domain-info-line-list">
+              <strong>Nameservers</strong>
+              <span>
+                <% if (domainInfo.nameservers && domainInfo.nameservers.length) { %>
+                  <% domainInfo.nameservers.forEach((ns) => { %>
+                    <em><%= ns %></em>
+                  <% }) %>
+                <% } else { %>
+                  Unknown
+                <% } %>
+              </span>
+            </div>
+
+            <div class="domain-info-line domain-info-line-list">
+              <strong>Domain status</strong>
+              <span>
+                <% if (domainInfo.statuses && domainInfo.statuses.length) { %>
+                  <% domainInfo.statuses.forEach((status) => { %>
+                    <em><%= status %></em>
+                  <% }) %>
+                <% } else { %>
+                  Unknown
+                <% } %>
+              </span>
+            </div>
+
+            <div class="domain-info-line domain-info-line-list">
+              <strong>Public emails</strong>
+              <span>
+                <% if (domainInfo.emails && domainInfo.emails.length) { %>
+                  <% domainInfo.emails.forEach((email) => { %>
+                    <em><%= email %></em>
+                  <% }) %>
+                <% } else { %>
+                  No public email found
+                <% } %>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <%
+          const threatReport = report.threatReport || {};
+          const threatChecks = threatReport.checks || {};
+          const threatHtml = threatChecks.html || {};
+          const threatLevel = threatReport.level || 'medium';
+          const threatScore = Number(threatReport.score !== undefined && threatReport.score !== null ? threatReport.score : 0);
+          const threatRiskPercent = Math.max(0, Math.min(100, 100 - threatScore));
+          const threatDomainAgeText = threatChecks.domainAgeDays !== null && threatChecks.domainAgeDays !== undefined ? threatChecks.domainAgeDays + ' days' : 'Unknown';
+          const threatFormsCount = threatHtml.forms !== undefined && threatHtml.forms !== null ? threatHtml.forms : 0;
+          const threatPasswordFieldsCount = threatHtml.passwordFields !== undefined && threatHtml.passwordFields !== null ? threatHtml.passwordFields : 0;
+          const threatExternalScriptsCount = threatHtml.externalScripts !== undefined && threatHtml.externalScripts !== null ? threatHtml.externalScripts : 0;
+        %>
+
+        <section class="report-card threat-card is-auto-threat">
+          <div class="card-heading">
+            <div class="icon-box"><i class="ph ph-shield-check"></i></div>
+            <div>
+              <h2>Threat analysis</h2>
+              <p>Phishing indicators, malware-like patterns, SSL trust, redirects and suspicious page behavior.</p>
+            </div>
+          </div>
+
+          <div class="threat-results is-visible">
+            <div class="threat-status-strip">
+              <div class="threat-status-item">
+                <span class="threat-status-icon"><%= threatLevel === 'high' ? '!' : '✓' %></span>
+                <div>
+                  <strong><%= threatLevel === 'high' ? 'Suspicious indicators detected' : 'No malware indicators found' %></strong>
+                  <p><%= threatLevel === 'high' ? 'The scanner found patterns that require review.' : 'Local scanner did not detect obvious malicious patterns.' %></p>
+                </div>
+              </div>
+
+              <div class="threat-status-item">
+                <span class="threat-status-icon"><%= threatLevel === 'high' ? '!' : '✓' %></span>
+                <div>
+                  <strong><%= threatLevel === 'high' ? 'Reputation needs review' : 'Reputation looks clean' %></strong>
+                  <p>Local heuristic reputation check completed.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="threat-verdict-card is-<%= threatLevel %>">
+              <div>
+                <span>Security risk</span>
+                <strong><%= threatReport.verdict || 'Analysis unavailable' %></strong>
+                <p>Score: <%= threatScore %>/100</p>
+              </div>
+
+              <div class="threat-risk-meter">
+                <div class="threat-risk-meter-track">
+                  <span id="threatRiskMeterFillAuto" data-risk-percent="<%= threatRiskPercent %>"></span>
+                </div>
+                <div class="threat-risk-meter-labels">
+                  <span>Minimal</span>
+                  <span>Low</span>
+                  <span>Medium</span>
+                  <span>High</span>
+                  <span>Critical</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="threat-overview-grid">
+              <div class="threat-overview-info">
+                <div class="threat-info-card">
+                  <span class="threat-info-label">Redirects to</span>
+                  <div class="threat-info-value"><%= threatChecks.finalUrl || 'Unavailable' %></div>
+                </div>
+
+                <div class="threat-info-card">
+                  <span class="threat-info-label">IP addresses</span>
+                  <div class="threat-ip-list">
+                    <% if (threatReport.resolvedIps && threatReport.resolvedIps.length) { %>
+                      <% threatReport.resolvedIps.forEach((ip) => { %>
+                        <span class="threat-ip-chip"><%= ip %></span>
+                      <% }) %>
+                    <% } else { %>
+                      <span class="threat-ip-chip">Unavailable</span>
+                    <% } %>
+                  </div>
+                </div>
+
+                <div class="threat-info-card">
+                  <span class="threat-info-label">SSL trust</span>
+                  <div class="threat-info-value">
+                    <%= threatChecks.sslValid ? 'Valid' + (threatChecks.sslIssuer ? ' · ' + threatChecks.sslIssuer : '') : 'Invalid or unavailable' %>
+                  </div>
+                </div>
+
+                <div class="threat-info-card">
+                  <span class="threat-info-label">Page status</span>
+                  <div class="threat-info-value">
+                    <%= threatChecks.statusCode ? String(threatChecks.statusCode) + (threatChecks.contentType ? ' · ' + threatChecks.contentType : '') : 'Unavailable' %>
+                  </div>
+                </div>
+              </div>
+
+              <% if (threatReport.screenshot && threatReport.screenshot.captured && threatReport.screenshot.url) { %>
+                <div class="threat-overview-preview">
+                  <div class="threat-preview-head">
+                    <h3>Website preview</h3>
+                    <p>Live visual preview from the current scan.</p>
+                  </div>
+
+                  <div class="threat-preview-frame">
+                    <img src="<%= threatReport.screenshot.url %>" alt="Website preview" loading="lazy">
+                  </div>
+                </div>
+              <% } %>
+            </div>
+
+            <div class="threat-two-columns">
+              <div class="threat-panel">
+                <h3>Website malware & security</h3>
+
+                <% if (threatReport.findings && threatReport.findings.length) { %>
+                  <% threatReport.findings.forEach((finding) => { %>
+                    <div class="threat-finding-row">
+                      <div>
+                        <strong><%= finding.area || 'Security' %></strong>
+                        <span> — <%= finding.message || 'Review required' %></span>
+                      </div>
+                      <span class="threat-badge <%= finding.severity || 'low' %>"><%= finding.severity || 'low' %></span>
+                    </div>
+                  <% }) %>
+                <% } else { %>
+                  <div class="threat-finding-row">
+                    <div>
+                      <strong>Clean result</strong>
+                      <span> — No suspicious findings detected.</span>
+                    </div>
+                    <span class="threat-badge low">low</span>
+                  </div>
+                <% } %>
+              </div>
+
+              <div class="threat-panel">
+                <h3>Technical footprint</h3>
+                <div class="threat-signal-row"><strong>Registrar</strong><span><%= threatChecks.registrar || 'Unknown' %></span></div>
+                <div class="threat-signal-row"><strong>Domain age</strong><span><%= threatDomainAgeText %></span></div>
+                <div class="threat-signal-row"><strong>Forms</strong><span><%= threatFormsCount %></span></div>
+                <div class="threat-signal-row"><strong>Password fields</strong><span><%= threatPasswordFieldsCount %></span></div>
+                <div class="threat-signal-row"><strong>External scripts</strong><span><%= threatExternalScriptsCount %></span></div>
+                <div class="threat-signal-row"><strong>Obfuscated JavaScript</strong><span><%= threatHtml.hasObfuscatedJavascript ? 'Detected' : 'Not detected' %></span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="report-card diagnostics-card" data-diagnostics-domain="<%= report.domain %>">
+          <div class="card-heading">
+            <div class="icon-box"><i class="ph ph-activity"></i></div>
+            <div>
+              <h2>Network diagnostics</h2>
+              <p>Run ping and traceroute checks for this domain.</p>
+            </div>
+          </div>
+
+          <div class="diagnostics-runner" id="diagnosticsRunner">
+            <div class="diagnostics-runner-text">
+              <strong>Ping & Traceroute</strong>
+              <span>Start live network diagnostics and review the route result.</span>
+            </div>
+
+            <button class="diagnostics-button" id="diagnosticsRunButton" type="button">
+              <span class="diagnostics-button-label">Run diagnostics</span>
+              <span class="diagnostics-button-percent">0%</span>
+              <span class="diagnostics-button-fill"></span>
+            </button>
+          </div>
+
+          <div class="diagnostics-progress" id="diagnosticsProgress" hidden>
+            <div class="diagnostics-progress-top">
+              <strong>Running diagnostics</strong>
+              <span id="diagnosticsProgressText">0%</span>
+            </div>
+            <div class="diagnostics-progress-track">
+              <span id="diagnosticsProgressBar"></span>
+            </div>
+          </div>
+
+          <div class="diagnostics-results" id="diagnosticsResults" hidden>
+            <div class="diagnostics-result-block">
+              <h3>Ping results</h3>
+              <pre id="diagnosticsPingOutput"></pre>
+            </div>
+
+            <div class="diagnostics-result-block">
+              <h3>Traceroute results</h3>
+              <pre id="diagnosticsTracerouteOutput"></pre>
+            </div>
+          </div>
+        </section>
+
+        <div class="report-grid">
+          <aside class="report-summary"></aside>
+
+          <div class="report-content">
+            <section class="report-card dns-cloud-card">
+              <div class="card-heading">
+                <div class="icon-box"><i class="ph ph-tree-structure"></i></div>
+                <div>
+                  <h2>DNS records</h2>
+                  <p>Public DNS configuration detected for this domain.</p>
+                </div>
+              </div>
+
+              <%
+                const formatDnsValue = (value) => {
+                  if (typeof value === 'string') return value;
+
+                  if (value && typeof value === 'object') {
+                    if (value.exchange) return value.exchange + (value.priority !== undefined ? ' · priority ' + value.priority : '');
+                    if (value.nsname) return value.nsname + (value.hostmaster ? ' · ' + value.hostmaster : '');
+                    return JSON.stringify(value);
+                  }
+
+                  return String(value || '');
+                };
+
+                const dnsRows = [];
+
+                Object.values(report.dnsReport.records || {}).forEach((record) => {
+                  const values = Array.isArray(record.values)
+                    ? record.values
+                    : (record.values ? [record.values] : []);
+
+                  if (values.length) {
+                    values.forEach((value) => {
+                      dnsRows.push({
+                        type: record.type,
+                        found: record.found,
+                        value,
+                        text: formatDnsValue(value),
+                        error: null
+                      });
+                    });
+                  } else {
+                    dnsRows.push({
+                      type: record.type,
+                      found: false,
+                      value: record.error || 'No records found',
+                      text: record.error || 'No records found',
+                      error: record.error || 'No records found'
+                    });
+                  }
+                });
+
+                dnsRows.sort((a, b) => {
+                  if (a.found !== b.found) return a.found ? -1 : 1;
+
+                  const order = {
+                    A: 1,
+                    AAAA: 2,
+                    NS: 3,
+                    MX: 4,
+                    TXT: 5,
+                    SPF: 6,
+                    DMARC: 7,
+                    CAA: 8,
+                    SOA: 9,
+                    DS: 10
+                  };
+
+                  return (order[a.type] || 99) - (order[b.type] || 99);
+                });
+              %>
+
+              <div class="dns-cloud-table">
+                <div class="dns-cloud-head">
+                  <span>Type</span>
+                  <span>Status</span>
+                  <span>Value</span>
+                  <span></span>
+                </div>
+
+                <% dnsRows.forEach((row) => {
+                  const encodedValue = encodeURIComponent(JSON.stringify([row.value]));
+                  const canOpen = !row.error;
+                  const ipVersionLabel = row.type === 'A' ? 'IPv4' : row.type === 'AAAA' ? 'IPv6' : null;
+                %>
+                  <div class="dns-cloud-row <%= row.found ? 'is-found' : 'is-missing' %>">
+                    <div class="dns-cloud-type">
+                      <span><%= row.type %></span>
+                    </div>
+
+                    <div class="dns-cloud-status">
+                      <strong class="<%= row.found ? 'status-ok' : 'status-missing' %>">
+                        <%= row.found ? 'Found' : 'Not found' %>
+                      </strong>
+                    </div>
+
+                    <div class="dns-cloud-value">
+                      <div class="dns-value-line">
+                        <% if (ipVersionLabel) { %>
+                          <span class="dns-value-badge"><%= ipVersionLabel %></span>
+                        <% } %>
+
+                        <span class="dns-value-text <%= row.error ? 'dns-cloud-muted' : '' %>"><%= row.text %></span>
+                      </div>
+                    </div>
+
+                    <div class="dns-cloud-actions">
+                      <% if (canOpen) { %>
+                        <button
+                          type="button"
+                          class="dns-record-more"
+                          data-record-type="<%= row.type %>"
+                          data-record-values="<%= encodedValue %>"
+                        >
+                          Show more
+                        </button>
+                      <% } else { %>
+                        <span class="dns-cloud-dash">—</span>
+                      <% } %>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            </section>
+
+            <div class="dns-record-modal" id="dnsRecordModal" hidden>
+              <div class="dns-record-modal-backdrop" data-close-dns-modal></div>
+
+              <div class="dns-record-modal-box">
+                <div class="dns-record-modal-head">
+                  <div>
+                    <span>DNS record</span>
+                    <strong id="dnsRecordModalTitle">Record</strong>
+                  </div>
+
+                  <button type="button" data-close-dns-modal>
+                    <i class="ph ph-x"></i>
+                  </button>
+                </div>
+
+                <div class="dns-record-modal-body" id="dnsRecordModalBody"></div>
+              </div>
+            </div>
+
+            <section id="mail-security" class="report-card">
+              <%
+                const mail = report.mailReport || {};
+                const spf = mail.spf || {};
+                const dmarc = mail.dmarc || {};
+                const dkim = mail.dkim || {};
+                const spfAnalysis = spf.analysis || {};
+                const dmarcAnalysis = dmarc.analysis || {};
+                const dmarcParsed = dmarcAnalysis.parsed || {};
+                const emailTrust = report.emailTrustReport || null;
+                const dkimHits = Array.isArray(dkim.results) ? dkim.results.filter((item) => item.found) : [];
+                const mailHealthScore = mail.mailHealthScore !== undefined && mail.mailHealthScore !== null ? mail.mailHealthScore : 0;
+                const spfLookupCount = spfAnalysis.lookupCount !== undefined && spfAnalysis.lookupCount !== null ? spfAnalysis.lookupCount : 0;
+                const spfLookupLimit = spfAnalysis.lookupLimit !== undefined && spfAnalysis.lookupLimit !== null ? spfAnalysis.lookupLimit : 10;
+                const spfPolicyValue = spfAnalysis.allPolicy && spfAnalysis.allPolicy.value ? spfAnalysis.allPolicy.value : 'Not detected';
+                const spfPolicyLabel = spfAnalysis.allPolicy && spfAnalysis.allPolicy.label ? spfAnalysis.allPolicy.label : null;
+                const spfPolicyDescription = spfAnalysis.allPolicy && spfAnalysis.allPolicy.description ? spfAnalysis.allPolicy.description : null;
+
+                const dkimSummary = dkimHits.length
+                  ? dkimHits.map((item) => {
+                      const analysis = (item.analyses && item.analyses[0]) || {};
+                      const parts = [item.selector];
+
+                      if (analysis.keyLength) parts.push('RSA ' + analysis.keyLength);
+                      if (analysis.testing) parts.push('testing mode');
+                      if (analysis.revoked) parts.push('revoked');
+
+                      return parts.join(' · ');
+                    }).join(', ')
+                  : 'No common DKIM selector detected';
+              %>
+
+              <div class="card-heading">
+                <div class="icon-box"><i class="ph ph-envelope-simple"></i></div>
+                <div>
+                  <h2>Mail security</h2>
+                  <p>SPF, DMARC, DKIM, MTA-STS and TLS reporting diagnostics.</p>
+                  <% if (report.scanInputType === 'email') { %>
+                    <p class="scan-context-note">
+                      Email input detected: <strong><%= report.originalInput %></strong>. Mail security was checked for <strong><%= report.domain %></strong>.
+                    </p>
+                  <% } %>
+                </div>
+              </div>
+
+              <% if (emailTrust) { %>
+                <div class="email-trust-card email-trust-<%= emailTrust.level %>">
+                  <div class="email-trust-main">
+                    <div>
+                      <span class="email-trust-label">Email Trust Verdict</span>
+                      <h3><%= emailTrust.verdict %></h3>
+                      <p><%= emailTrust.summary %></p>
+                    </div>
+
+<div class="email-trust-score email-trust-score-<%= emailTrust.level %>">
+<% if (emailTrust.level === 'high') { %>
+  <div class="email-trust-mark">✓</div>
+  <div class="email-trust-score-text">
+    <strong>Valid</strong>
+    <span>Trusted sender domain</span>
+  </div>
+<% } else if (emailTrust.level === 'medium') { %>
+  <div class="email-trust-mark">!</div>
+  <div class="email-trust-score-text">
+    <strong>Partially verified</strong>
+  </div>
+<% } else { %>
+  <div class="email-trust-mark">!</div>
+  <div class="email-trust-score-text">
+    <strong>Caution</strong>
+    <span>Review this sender</span>
+  </div>
+<% } %>
+</div>
+
+                  <div class="email-trust-checks">
+                    <% emailTrust.checks.forEach((check) => { %>
+                      <div class="email-trust-check">
+                        <span class="email-trust-dot email-trust-dot-<%= check.status %>"></span>
+                        <div>
+                          <strong><%= check.label %></strong>
+                          <p><%= check.value %></p>
+                        </div>
+                      </div>
+                    <% }) %>
+                  </div>
+
+                  <p class="email-trust-note"><%= emailTrust.note %></p>
+                </div>
+              <% } %>
+
+              <div class="detail-grid">
+                <div>
+                  <span>Mail Health Score</span>
+                  <strong><%= mailHealthScore %>/100</strong>
+                </div>
+
+                <div>
+                  <span>MX records</span>
+                  <strong class="<%= mail.hasMx ? 'status-ok' : 'status-missing' %>">
+                    <%= mail.hasMx ? 'Found' : 'Missing' %>
+                  </strong>
+                </div>
+
+                <div>
+                  <span>SPF status</span>
+                  <strong class="<%= spfAnalysis.status === 'ok' ? 'status-ok' : 'status-missing' %>">
+                    <%= spfAnalysis.message || 'Not checked' %>
+                  </strong>
+                </div>
+
+                <div>
+                  <span>SPF DNS lookups</span>
+                  <strong><%= spfLookupCount %>/<%= spfLookupLimit %></strong>
+                </div>
+
+                <div>
+                  <span>SPF policy</span>
+                  <strong>
+                    <%= spfPolicyValue %>
+                    <% if (spfPolicyLabel) { %>
+                      · <%= spfPolicyLabel %>
+                    <% } %>
+                  </strong>
+                </div>
+
+                <div>
+                  <span>DMARC policy</span>
+                  <strong class="<%= ['quarantine', 'reject'].includes(dmarcAnalysis.policy) ? 'status-ok' : 'status-missing' %>">
+                    <%= dmarcAnalysis.policy ? 'p=' + dmarcAnalysis.policy : 'Missing' %>
+                  </strong>
+                </div>
+
+                <div>
+                  <span>DKIM selectors</span>
+                  <strong class="<%= dkim.found ? 'status-ok' : 'status-missing' %>">
+                    <%= dkim.found && dkim.foundSelectors ? dkim.foundSelectors.join(', ') : 'Not detected' %>
+                  </strong>
+                </div>
+
+                <div>
+                  <span>MTA-STS / TLS-RPT</span>
+                  <strong>
+                    <%= mail.mtaSts && mail.mtaSts.found ? 'MTA-STS found' : 'MTA-STS missing' %>
+                    ·
+                    <%= mail.tlsRpt && mail.tlsRpt.found ? 'TLS-RPT found' : 'TLS-RPT missing' %>
+                  </strong>
+                </div>
+              </div>
+
+              <div class="mini-table">
+                <div class="mini-row">
+                  <span>SPF record</span>
+                  <strong><%= spf.records && spf.records[0] ? spf.records[0] : 'No SPF record found' %></strong>
+                </div>
+
+                <div class="mini-row">
+                  <span>SPF analysis</span>
+                  <strong>
+                    <%= spfAnalysis.recommendation || spfPolicyDescription || 'SPF configuration looks acceptable.' %>
+                  </strong>
+                </div>
+
+                <div class="mini-row">
+                  <span>DMARC record</span>
+                  <strong><%= dmarc.records && dmarc.records[0] ? dmarc.records[0] : 'No DMARC record found' %></strong>
+                </div>
+
+                <div class="mini-row">
+                  <span>DMARC analysis</span>
+                  <strong>
+                    <%= dmarcAnalysis.explanation || 'DMARC was not checked.' %>
+                    <% if (dmarcParsed.rua) { %>
+                      Reporting: <%= dmarcParsed.rua %>
+                    <% } %>
+                  </strong>
+                </div>
+
+                <div class="mini-row">
+                  <span>DKIM result</span>
+                  <strong><%= dkimSummary %></strong>
+                </div>
+
+                <% if (dmarcAnalysis.recommendation) { %>
+                  <div class="mini-row">
+                    <span>Recommended DMARC record</span>
+                    <strong class="mail-record-code"><%= dmarcAnalysis.recommendation %></strong>
+                  </div>
+                <% } %>
+              </div>
+            </section>
+
+            <section class="report-card">
+              <div class="card-heading">
+                <div class="icon-box"><i class="ph ph-browser"></i></div>
+                <div>
+                  <h2>Website and headers</h2>
+                  <p>HTTPS reachability, redirects and important security headers.</p>
+                </div>
+              </div>
+
+              <div class="detail-grid">
+                <div><span>Reachable</span><strong class="<%= report.httpReport.reachable ? 'status-ok' : 'status-missing' %>"><%= report.httpReport.reachable ? 'Yes' : 'No' %></strong></div>
+                <div><span>Status code</span><strong><%= report.httpReport.statusCode || 'Unknown' %></strong></div>
+                <div><span>Redirects</span><strong><%= report.httpReport.redirects %></strong></div>
+                <div><span>Final URL</span><strong><%= report.httpReport.finalUrl || 'Unknown' %></strong></div>
+              </div>
+
+              <div class="headers-list">
+                <% report.httpReport.securityHeaders.forEach((header) => { %>
+                  <div class="header-check <%= header.found ? 'found' : 'missing' %>">
+                    <span><%= header.name %></span>
+                    <strong><%= header.found ? 'Found' : 'Missing' %></strong>
+                  </div>
+                <% }) %>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('../partials/footer') %>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const card = document.querySelector(".diagnostics-card");
+      const button = document.getElementById("diagnosticsRunButton");
+      const buttonLabel = button?.querySelector(".diagnostics-button-label");
+      const buttonPercent = button?.querySelector(".diagnostics-button-percent");
+      const buttonFill = button?.querySelector(".diagnostics-button-fill");
+
+      const progressWrap = document.getElementById("diagnosticsProgress");
+      const progressText = document.getElementById("diagnosticsProgressText");
+      const progressBar = document.getElementById("diagnosticsProgressBar");
+
+      const resultsWrap = document.getElementById("diagnosticsResults");
+      const pingOutput = document.getElementById("diagnosticsPingOutput");
+      const tracerouteOutput = document.getElementById("diagnosticsTracerouteOutput");
+
+      if (!card || !button) return;
+
+      const target = card.dataset.diagnosticsDomain;
+
+      function setProgress(value) {
+        const percent = Math.max(0, Math.min(100, Math.round(value)));
+
+        if (buttonPercent) buttonPercent.textContent = `${percent}%`;
+        if (buttonFill) buttonFill.style.width = `${percent}%`;
+        if (progressText) progressText.textContent = `${percent}%`;
+        if (progressBar) progressBar.style.width = `${percent}%`;
+      }
+
+      function resetResults() {
+        if (resultsWrap) resultsWrap.hidden = true;
+        if (pingOutput) pingOutput.textContent = "";
+        if (tracerouteOutput) tracerouteOutput.textContent = "";
+      }
+
+      function hideProgressSmooth() {
+        if (!progressWrap) return;
+
+        progressWrap.style.opacity = "0";
+
+        setTimeout(() => {
+          progressWrap.hidden = true;
+          progressWrap.style.opacity = "1";
+          setProgress(0);
+        }, 380);
+      }
+
+      button.addEventListener("click", async () => {
+        resetResults();
+
+        button.disabled = true;
+        button.classList.add("is-loading");
+        if (buttonLabel) buttonLabel.textContent = "Running";
+        if (progressWrap) {
+          progressWrap.hidden = false;
+          progressWrap.style.opacity = "1";
+          progressWrap.style.transition = "opacity 0.35s ease";
+        }
+
+        let progress = 0;
+        setProgress(progress);
+
+        const timer = setInterval(() => {
+          if (progress < 92) {
+            progress += Math.random() * 8 + 3;
+            setProgress(progress);
+          }
+        }, 350);
+
+        try {
+          const response = await fetch(`/api/diagnostics?target=${encodeURIComponent(target)}`, {
+            headers: {
+              "Accept": "application/json"
+            }
+          });
+
+          const data = await response.json();
+
+          clearInterval(timer);
+          hideProgressSmooth();
+
+          if (!response.ok || !data.ok) {
+            throw new Error(data.message || "Diagnostics failed");
+          }
+
+          setTimeout(() => {
+            if (pingOutput) {
+              pingOutput.textContent = data.report?.ping?.output || "No ping output returned.";
+            }
+
+            if (tracerouteOutput) {
+              tracerouteOutput.textContent = data.report?.traceroute?.output || "No traceroute output returned.";
+            }
+
+            if (resultsWrap) resultsWrap.hidden = false;
+
+            button.disabled = false;
+            button.classList.remove("is-loading");
+            if (buttonLabel) buttonLabel.textContent = "Run again";
+          }, 350);
+        } catch (error) {
+          clearInterval(timer);
+          hideProgressSmooth();
+
+          if (pingOutput) pingOutput.textContent = error.message || "Diagnostics failed.";
+          if (tracerouteOutput) tracerouteOutput.textContent = "Please try again.";
+          if (resultsWrap) resultsWrap.hidden = false;
+
+          button.disabled = false;
+          button.classList.remove("is-loading");
+          if (buttonLabel) buttonLabel.textContent = "Run again";
+        }
+      });
+    });
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const meter = document.getElementById("threatRiskMeterFillAuto");
+
+      if (meter) {
+        const value = Number(meter.dataset.riskPercent || 0);
+        const percent = Math.max(0, Math.min(100, value));
+
+        meter.style.width = `${percent}%`;
+      }
+    });
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const modal = document.getElementById("dnsRecordModal");
+      const modalTitle = document.getElementById("dnsRecordModalTitle");
+      const modalBody = document.getElementById("dnsRecordModalBody");
+
+      if (!modal || !modalTitle || !modalBody) return;
+
+      function formatDnsModalValue(value) {
+        if (typeof value === "string") return value;
+        return JSON.stringify(value, null, 2);
+      }
+
+      function openDnsModal(type, values) {
+        modalTitle.textContent = type;
+        modalBody.textContent = "";
+
+        values.forEach((value) => {
+          const item = document.createElement("div");
+          item.className = "dns-record-modal-value";
+          item.textContent = formatDnsModalValue(value);
+          modalBody.appendChild(item);
+        });
+
+        modal.hidden = false;
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeDnsModal() {
+        modal.hidden = true;
+        modalBody.textContent = "";
+        document.body.style.overflow = "";
+      }
+
+      document.querySelectorAll(".dns-record-more").forEach((button) => {
+        button.addEventListener("click", () => {
+          const type = button.dataset.recordType || "Record";
+
+          try {
+            const values = JSON.parse(decodeURIComponent(button.dataset.recordValues || "[]"));
+            openDnsModal(type, values);
+          } catch {
+            openDnsModal(type, ["Unable to read this DNS record."]);
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-close-dns-modal]").forEach((button) => {
+        button.addEventListener("click", closeDnsModal);
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !modal.hidden) {
+          closeDnsModal();
+        }
+      });
+    });
+  </script>
+
+  <% if (report.scanInputType === 'email') { %>
+    <script>
+      window.addEventListener("load", () => {
+        const mailSection = document.getElementById("mail-security");
+        if (!mailSection) return;
+
+        setTimeout(() => {
+          mailSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+        }, 350);
+      });
+      </script>
+
+      <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const button = document.getElementById("exportPdfButton");
+    if (!button) return;
+
+    const label = button.querySelector(".export-button-label");
+    const circle = button.querySelector(".export-progress-value");
+
+const setProgress = (value) => {
+  const percent = Math.max(0, Math.min(100, Math.round(value)));
+  button.style.setProperty("--export-progress", percent);
+};
+
+    button.addEventListener("click", () => {
+      if (button.classList.contains("is-exporting")) return;
+
+      const url = button.dataset.url;
+      const fallbackName = button.dataset.filename || "security-report.pdf";
+
+      button.classList.add("is-exporting");
+      button.disabled = true;
+      label.textContent = "Preparing PDF";
+      setProgress(0);
+
+      let fakeProgress = 0;
+      const fallbackTimer = setInterval(() => {
+        if (fakeProgress < 88) {
+          fakeProgress += 4;
+          setProgress(fakeProgress);
+        }
+      }, 220);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", url, true);
+      xhr.responseType = "blob";
+
+      xhr.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        clearInterval(fallbackTimer);
+
+        if (xhr.status < 200 || xhr.status >= 300) {
+          button.classList.remove("is-exporting");
+          button.disabled = false;
+          label.textContent = "Export Full Report";
+          setProgress(0);
+          alert("PDF export failed. Please try again.");
+          return;
+        }
+
+        setProgress(100);
+        label.textContent = "Downloading";
+
+        const blob = new Blob([xhr.response], { type: "application/pdf" });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = fallbackName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          button.classList.remove("is-exporting");
+          button.disabled = false;
+          label.textContent = "Export Full Report";
+          setProgress(0);
+        }, 900);
+      };
+
+      xhr.onerror = () => {
+        clearInterval(fallbackTimer);
+        button.classList.remove("is-exporting");
+        button.disabled = false;
+        label.textContent = "Export Full Report";
+        setProgress(0);
+        alert("PDF export failed. Please try again.");
+      };
+
+      xhr.send();
+    });
+  });
+</script>
+
+  <% } %>
+</body>
+</html>

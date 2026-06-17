@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Runtime / cache
+.cache/
+tmp/
+.temp/
+coverage/
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Generated files
+*.zip
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Playwright / browser artifacts
+playwright-report/
+test-results/
+
+# Local backups
+*.backup-*
+.gitignore.backup-*

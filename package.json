@@ -1,0 +1,21 @@
+{
+  "name": "elene-project",
+  "version": "1.0.0",
+  "description": "Domain, DNS, SSL and web security scanner platform",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "morgan": "^1.10.0",
+    "playwright": "^1.61.0",
+    "sharp": "^0.35.1",
+    "validator": "^13.12.0"
+  }
+}

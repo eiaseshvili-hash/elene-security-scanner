@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= statusCode %> — <%= title %></title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+  <main class="error-page">
+    <section class="error-card">
+      <p class="eyebrow">Request failed</p>
+      <h1><%= statusCode %></h1>
+      <p><%= message %></p>
+      <a class="btn btn-primary" href="/">Back to homepage</a>
+    </section>
+  </main>
+</body>
+</html>

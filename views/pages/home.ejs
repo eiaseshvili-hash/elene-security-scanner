@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<%- include('../partials/head', { title, description }) %>
+<body>
+  <%- include('../partials/header') %>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-content">
+<div class="hero-kicker">
+  <span></span>
+  Domain and email trust intelligence
+</div>
+
+          <h1>Check domains, mail security and suspicious sender trust in one clean report.</h1>
+
+          <p class="hero-text">
+          Elene helps you inspect public domain configuration, sender domain trust,
+          mail security records, SSL certificates, HTTP status, redirects and security headers with a structured technical report.
+          </p>
+
+          <form class="scan-form" id="scanner" action="/scan" method="get">
+            <div class="scan-input-wrap">
+              <i class="ph ph-globe-hemisphere-west"></i>
+              <input
+                type="text"
+                name="domain"
+                placeholder="Enter domain or email, e.g. example.com or sender@example.com"
+                autocomplete="off"
+                spellcheck="false"
+                required
+              >
+            </div>
+            <button class="btn btn-primary" type="submit">
+              <span>Run scan</span>
+              <i class="ph ph-arrow-right"></i>
+            </button>
+</form>
+
+<div class="scan-error-message" id="scanErrorMessage" hidden></div>
+
+<div class="home-scan-progress" id="homeScanProgress" hidden>
+  <div class="home-scan-progress-track">
+    <span id="homeScanProgressBar"></span>
+  </div>
+</div>
+
+<div class="hero-meta">
+            <span><i class="ph ph-check-circle"></i> DNS records</span>
+            <span><i class="ph ph-check-circle"></i> SSL certificate</span>
+            <span><i class="ph ph-check-circle"></i> Mail security</span>
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="Platform preview">
+          <div class="panel-top">
+            <span class="status-dot"></span>
+            <span>Live security overview</span>
+          </div>
+
+          <div class="score-card">
+            <div>
+              <p>Security score</p>
+              <strong>86</strong>
+            </div>
+            <span>Good</span>
+          </div>
+
+          <div class="check-list">
+            <div class="check-row ok">
+              <i class="ph ph-check"></i>
+              <span>SSL certificate is valid</span>
+            </div>
+            <div class="check-row ok">
+              <i class="ph ph-check"></i>
+              <span>MX records detected</span>
+            </div>
+            <div class="check-row warning">
+              <i class="ph ph-warning"></i>
+              <span>DMARC policy can be improved</span>
+            </div>
+            <div class="check-row neutral">
+              <i class="ph ph-info"></i>
+              <span>Security headers partially configured</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Core modules</p>
+          <h2>Everything needed for a fast technical domain audit.</h2>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="icon-box"><i class="ph ph-tree-structure"></i></div>
+            <h3>DNS Intelligence</h3>
+            <p>Inspect A, AAAA, NS, MX, TXT, SPF, DMARC, CAA, SOA and DNSSEC related public records.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="icon-box"><i class="ph ph-envelope-simple"></i></div>
+            <h3>Mail Security</h3>
+            <p>Detect common email authentication issues across MX, SPF, DMARC and possible DKIM selectors.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="icon-box"><i class="ph ph-lock-key"></i></div>
+            <h3>SSL Analysis</h3>
+            <p>Check certificate validity, issuer, expiration date, domain match and remaining active days.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="icon-box"><i class="ph ph-browser"></i></div>
+            <h3>Web Headers</h3>
+            <p>Review HTTP status, redirects, final URL, server headers and key security header configuration.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-soft" id="checks">
+      <div class="container checks-layout">
+        <div>
+          <p class="eyebrow">Report structure</p>
+          <h2>Clear results for technical teams and business owners.</h2>
+          <p class="section-text">
+            Each scan produces a structured report with detected records, configuration warnings,
+            actionable issues and an overall score.
+          </p>
+        </div>
+
+        <div class="checks-card">
+          <div class="checks-item">
+            <span>DNS records</span>
+            <strong>A, AAAA, NS, MX, TXT, CAA, SOA</strong>
+          </div>
+          <div class="checks-item">
+            <span>Mail security</span>
+            <strong>SPF, DMARC, MX diagnostics</strong>
+          </div>
+          <div class="checks-item">
+            <span>Website security</span>
+            <strong>SSL, redirects, HTTP headers</strong>
+          </div>
+          <div class="checks-item">
+            <span>Report output</span>
+            <strong>Score, issues and public report page</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('../partials/footer') %>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("scanner");
+    const button = form?.querySelector(".btn-primary");
+    const buttonLabel = button?.querySelector("span");
+    const progressWrap = document.getElementById("homeScanProgress");
+    const progressBar = document.getElementById("homeScanProgressBar");
+
+    if (!form || !button || !progressWrap || !progressBar) return;
+
+    function setProgress(value) {
+      const percent = Math.max(0, Math.min(100, Math.round(value)));
+      progressBar.style.width = `${percent}%`;
+    }
+
+    form.addEventListener("submit", () => {
+      button.classList.add("is-loading");
+      button.disabled = true;
+
+      if (buttonLabel) {
+        buttonLabel.textContent = "Scanning";
+      }
+
+      progressWrap.hidden = false;
+      progressWrap.style.opacity = "1";
+
+      let progress = 0;
+      setProgress(progress);
+
+      setInterval(() => {
+        if (progress < 94) {
+          progress += Math.random() * 7 + 3;
+          setProgress(progress);
+        }
+      }, 260);
+    });
+  });
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("scanner");
+    const input = form?.querySelector('input[name="domain"]');
+    const button = form?.querySelector(".btn-primary");
+    const buttonLabel = button?.querySelector("span");
+    const progressWrap = document.getElementById("homeScanProgress");
+    const progressBar = document.getElementById("homeScanProgressBar");
+    const errorBox = document.getElementById("scanErrorMessage");
+
+    if (!form || !input || !button || !progressWrap || !progressBar || !errorBox) return;
+
+    let progressTimer = null;
+
+    function setProgress(value) {
+      const percent = Math.max(0, Math.min(100, Math.round(value)));
+      progressBar.style.width = `${percent}%`;
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.hidden = false;
+      progressWrap.hidden = true;
+      progressWrap.style.opacity = "0";
+      setProgress(0);
+    }
+
+    function clearError() {
+      errorBox.textContent = "";
+      errorBox.hidden = true;
+    }
+
+    function resetButton() {
+      button.classList.remove("is-loading");
+      button.disabled = false;
+
+      if (buttonLabel) {
+        buttonLabel.textContent = "Run scan";
+      }
+
+      if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+      }
+    }
+
+    function startLoading() {
+      button.classList.add("is-loading");
+      button.disabled = true;
+
+      if (buttonLabel) {
+        buttonLabel.textContent = "Checking";
+      }
+
+      progressWrap.hidden = false;
+      progressWrap.style.opacity = "1";
+      setProgress(0);
+
+      let progress = 0;
+
+      progressTimer = setInterval(() => {
+        if (progress < 88) {
+          progress += Math.random() * 6 + 2;
+          setProgress(progress);
+        }
+      }, 220);
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const target = input.value.trim();
+
+      clearError();
+
+      if (!target) {
+        showError("Enter a domain or email address.");
+        resetButton();
+        return;
+      }
+
+      startLoading();
+
+      try {
+        const response = await fetch(`/api/validate-target?target=${encodeURIComponent(target)}`, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json"
+          }
+        });
+
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !result?.ok) {
+          const message = result?.message || "Target was not found. Enter a valid existing domain or email address.";
+          showError(message);
+          resetButton();
+          return;
+        }
+
+        if (buttonLabel) {
+          buttonLabel.textContent = "Scanning";
+        }
+
+        setProgress(100);
+
+        window.location.href = `/scan?domain=${encodeURIComponent(target)}`;
+      } catch {
+        showError("Validation failed. Please check the domain or email address and try again.");
+        resetButton();
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
